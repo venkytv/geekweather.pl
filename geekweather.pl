@@ -17,7 +17,8 @@ my $weekday_times_re = qr/^\s*(?:(?:9|10|11)AM|(?:[678]PM))/;
 my $weekend_times_re = qr/^\s*(?:9AM|1[01]AM|12PM|[123456789]PM)/;
 my $weekend_re = qr/^(?:Sat|Sun)$/;
 my $iconfile = 'current.png';
-my $pad = ' ' x 15;
+my $header_width = 15;
+my $pad = ' ' x ($header_width + 2);
 
 chdir $FindBin::RealBin;
 
@@ -76,6 +77,16 @@ sub formatted_text($) {
     return $t;
 }
 
+sub println($$) {
+    my ($hdr, $val) = @_;
+    $val = formatted_text($val);
+    if ($hdr) {
+        printf("%-*s: %s\n", $header_width, $hdr, $val);
+    } else {
+        print "$pad$val\n";
+    }
+}
+
 my %has_rain = ();
 tie my %rain, 'Tie::Hash::Indexed';
 my $lastday = '';
@@ -101,21 +112,27 @@ my $time_now = time;
 my @localtime_now = localtime(time);
 my $day = strftime('%a', @localtime_now);
 my $tnum_now = strftime('%k%M', @localtime_now);
+my $daysuff = '';
 if ($tnum_now > 2100) {
     $day = strftime('%a', localtime($time_now + (24 * 60 * 60)));
+    $daysuff = ' (Tomorrow)';
 }
 
-my $rightnow = formatted_text($conditions->{present} . ', '
-                    . int($conditions->{temperature} + 0.5)) . "\x{B0}";
-print "Right Now    : $rightnow\n";
-print "Next 24 Hours: ", formatted_text($conditions->{day}), "\n";
+my $rightnow = $conditions->{present} . ', '
+                    . int($conditions->{temperature} + 0.5) . "\x{B0}";
+println('Right Now', $rightnow);
+println('Next 24 Hours', $conditions->{day});
 
 if ($has_rain{$day}) {
-    print $pad, join('', map { $rain{$day}->{$_}->[0] } keys %{ $rain{$day} }), "\n";
-    print $pad, join('', map { $rain{$day}->{$_}->[1] } keys %{ $rain{$day} }), "\n";
+    my $times = join('', map { $rain{$day}->{$_}->[0] } keys %{ $rain{$day} });
+    my $percs = join('', map { $rain{$day}->{$_}->[1] } keys %{ $rain{$day} });
+    $times =~ s/\.*$//;
+    $percs =~ s/\s*$//;
+    println("Rain$daysuff", $times);
+    println('', $percs);
 }
 
-print "Next 7 Days  : ", formatted_text($conditions->{week}), "\n";
+println('Next 7 Days',  $conditions->{week});
 
 my $icon = $conditions->{icon};
 unlink $iconfile;
