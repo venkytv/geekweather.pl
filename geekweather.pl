@@ -134,6 +134,9 @@ if ($has_rain{$day}) {
 
 println('Next 7 Days',  $conditions->{week});
 
+print "\n(Weather data retrieved on ",
+      strftime("%a, %b %d at %I:%M%p", @localtime_now), ")\n";
+
 my $icon = $conditions->{icon};
 unlink $iconfile;
 symlink("icons/${icon}.png", $iconfile);
